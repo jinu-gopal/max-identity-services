@@ -1,0 +1,400 @@
+package com.max.erp.identity.service;
+
+import com.max.erp.identity.dto.BusinessObjectFieldResponse;
+import com.max.erp.identity.dto.CreateBusinessObjectFieldRequest;
+import com.max.erp.identity.dto.UpdateBusinessObjectFieldRequest;
+import com.max.erp.identity.entity.BusinessObject;
+import com.max.erp.identity.entity.BusinessObjectField;
+import com.max.erp.identity.repository.BusinessObjectFieldRepository;
+import com.max.erp.identity.repository.BusinessObjectRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class BusinessObjectFieldService {
+
+    private final BusinessObjectFieldRepository fieldRepository;
+    private final BusinessObjectRepository businessObjectRepository;
+
+    private static final Set<String> SUPPORTED_FIELD_TYPES = Set.of(
+            "TEXT",
+            "LONG_TEXT",
+            "NUMBER",
+            "DECIMAL",
+            "CURRENCY",
+            "PERCENTAGE",
+            "DATE",
+            "DATETIME",
+            "BOOLEAN",
+            "CHOICE",
+            "MULTI_CHOICE",
+            "REFERENCE",
+            "USER",
+            "EMAIL",
+            "PHONE",
+            "ADDRESS",
+            "FILE",
+            "IMAGE",
+            "FORMULA",
+            "AUTO_NUMBER"
+    );
+
+    public BusinessObjectFieldService(
+            BusinessObjectFieldRepository fieldRepository,
+            BusinessObjectRepository businessObjectRepository) {
+
+        this.fieldRepository = fieldRepository;
+        this.businessObjectRepository = businessObjectRepository;
+    }
+
+    // ============================================================
+    // GET ALL FIELDS
+    // ============================================================
+
+    @Transactional(readOnly = true)
+    public List<BusinessObjectFieldResponse> getFields(
+            UUID businessObjectId) {
+
+        if (!businessObjectRepository.existsById(businessObjectId)) {
+            throw new IllegalArgumentException(
+                    "Business object not found");
+        }
+
+        return fieldRepository
+                .findAllByBusinessObjectIdOrderByDisplayOrderAsc(
+                        businessObjectId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    // ============================================================
+    // CREATE FIELD
+    // ============================================================
+
+    public BusinessObjectFieldResponse createField(
+            UUID businessObjectId,
+            CreateBusinessObjectFieldRequest request) {
+
+        BusinessObject businessObject =
+                businessObjectRepository.findById(businessObjectId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Business object not found"));
+
+        if (!"DRAFT".equalsIgnoreCase(
+                businessObject.getStatus())) {
+
+            throw new IllegalStateException(
+                    "Fields can only be created while the business object is in DRAFT status");
+        }
+
+        String fieldKey =
+                request.fieldKey()
+                        .trim()
+                        .toLowerCase();
+
+        if (fieldRepository
+                .existsByBusinessObjectIdAndFieldKey(
+                        businessObjectId,
+                        fieldKey)) {
+
+            throw new IllegalArgumentException(
+                    "A field with key '" +
+                            fieldKey +
+                            "' already exists");
+        }
+
+        String fieldType =
+                request.fieldType()
+                        .trim()
+                        .toUpperCase();
+
+        validateFieldType(fieldType);
+
+        if (request.minValue() != null
+                && request.maxValue() != null
+                && request.minValue()
+                .compareTo(request.maxValue()) > 0) {
+
+            throw new IllegalArgumentException(
+                    "Minimum value cannot be greater than maximum value");
+        }
+
+        BusinessObjectField field =
+                new BusinessObjectField();
+
+        field.setBusinessObject(businessObject);
+
+        field.setFieldKey(fieldKey);
+
+        field.setLabel(
+                request.label().trim());
+
+        field.setDescription(
+                request.description() != null
+                        ? request.description().trim()
+                        : null);
+
+        field.setFieldType(fieldType);
+
+        field.setRequired(
+                request.required());
+
+        field.setUniqueValue(
+                request.uniqueValue());
+
+        field.setReadOnly(
+                request.readOnly());
+
+        field.setHidden(
+                request.hidden());
+
+        field.setDefaultValue(
+                request.defaultValue());
+
+        field.setMinValue(
+                request.minValue());
+
+        field.setMaxValue(
+                request.maxValue());
+
+        field.setValidationPattern(
+                request.validationPattern());
+
+        field.setDisplayOrder(
+                request.displayOrder());
+
+        BusinessObjectField savedField =
+                fieldRepository.save(field);
+
+        return toResponse(savedField);
+    }
+
+    // ============================================================
+    // UPDATE FIELD
+    // ============================================================
+
+    public BusinessObjectFieldResponse updateField(
+            UUID businessObjectId,
+            UUID fieldId,
+            UpdateBusinessObjectFieldRequest request) {
+
+        BusinessObjectField field =
+                fieldRepository.findById(fieldId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Business object field not found"));
+
+        if (!field.getBusinessObject()
+                .getId()
+                .equals(businessObjectId)) {
+
+            throw new IllegalArgumentException(
+                    "Field does not belong to the specified business object");
+        }
+
+        BusinessObject businessObject =
+                field.getBusinessObject();
+
+        if (!"DRAFT".equalsIgnoreCase(
+                businessObject.getStatus())) {
+
+            throw new IllegalStateException(
+                    "Fields can only be edited while the business object is in DRAFT status");
+        }
+
+        // --------------------------------------------------------
+        // LABEL
+        // --------------------------------------------------------
+
+        if (request.getLabel() != null) {
+
+            field.setLabel(
+                    request.getLabel().trim());
+        }
+
+        // --------------------------------------------------------
+        // DESCRIPTION
+        // --------------------------------------------------------
+
+        if (request.getDescription() != null) {
+
+            field.setDescription(
+                    request.getDescription().trim());
+        }
+
+        // --------------------------------------------------------
+        // FIELD TYPE
+        // --------------------------------------------------------
+
+        if (request.getFieldType() != null) {
+
+            String fieldType =
+                    request.getFieldType()
+                            .trim()
+                            .toUpperCase();
+
+            validateFieldType(fieldType);
+
+            field.setFieldType(fieldType);
+        }
+
+        // --------------------------------------------------------
+        // REQUIRED
+        // --------------------------------------------------------
+
+        if (request.getRequired() != null) {
+
+            field.setRequired(
+                    request.getRequired());
+        }
+
+        // --------------------------------------------------------
+        // UNIQUE
+        // --------------------------------------------------------
+
+        if (request.getUniqueValue() != null) {
+
+            field.setUniqueValue(
+                    request.getUniqueValue());
+        }
+
+        // --------------------------------------------------------
+        // READ ONLY
+        // --------------------------------------------------------
+
+        if (request.getReadOnly() != null) {
+
+            field.setReadOnly(
+                    request.getReadOnly());
+        }
+
+        // --------------------------------------------------------
+        // HIDDEN
+        // --------------------------------------------------------
+
+        if (request.getHidden() != null) {
+
+            field.setHidden(
+                    request.getHidden());
+        }
+
+        // --------------------------------------------------------
+        // DEFAULT VALUE
+        // --------------------------------------------------------
+
+        if (request.getDefaultValue() != null) {
+
+            field.setDefaultValue(
+                    request.getDefaultValue());
+        }
+
+        // --------------------------------------------------------
+        // MIN VALUE
+        // --------------------------------------------------------
+
+        if (request.getMinValue() != null) {
+
+            field.setMinValue(
+                    request.getMinValue());
+        }
+
+        // --------------------------------------------------------
+        // MAX VALUE
+        // --------------------------------------------------------
+
+        if (request.getMaxValue() != null) {
+
+            field.setMaxValue(
+                    request.getMaxValue());
+        }
+
+        // --------------------------------------------------------
+        // MIN / MAX VALIDATION
+        // --------------------------------------------------------
+
+        if (field.getMinValue() != null
+                && field.getMaxValue() != null
+                && field.getMinValue()
+                .compareTo(field.getMaxValue()) > 0) {
+
+            throw new IllegalArgumentException(
+                    "Minimum value cannot be greater than maximum value");
+        }
+
+        // --------------------------------------------------------
+        // VALIDATION PATTERN
+        // --------------------------------------------------------
+
+        if (request.getValidationPattern() != null) {
+
+            field.setValidationPattern(
+                    request.getValidationPattern());
+        }
+
+        // --------------------------------------------------------
+        // DISPLAY ORDER
+        // --------------------------------------------------------
+
+        if (request.getDisplayOrder() != null) {
+
+            field.setDisplayOrder(
+                    request.getDisplayOrder());
+        }
+
+        BusinessObjectField savedField =
+                fieldRepository.save(field);
+
+        return toResponse(savedField);
+    }
+
+    // ============================================================
+    // VALIDATE FIELD TYPE
+    // ============================================================
+
+    private void validateFieldType(
+            String fieldType) {
+
+        if (!SUPPORTED_FIELD_TYPES
+                .contains(fieldType)) {
+
+            throw new IllegalArgumentException(
+                    "Unsupported field type: " +
+                            fieldType);
+        }
+    }
+
+    // ============================================================
+    // CONVERT ENTITY TO RESPONSE
+    // ============================================================
+
+    private BusinessObjectFieldResponse toResponse(
+            BusinessObjectField field) {
+
+        return new BusinessObjectFieldResponse(
+                field.getId(),
+                field.getBusinessObject().getId(),
+                field.getFieldKey(),
+                field.getLabel(),
+                field.getDescription(),
+                field.getFieldType(),
+                field.isRequired(),
+                field.isUniqueValue(),
+                field.isReadOnly(),
+                field.isHidden(),
+                field.getDefaultValue(),
+                field.getMinValue(),
+                field.getMaxValue(),
+                field.getValidationPattern(),
+                field.getDisplayOrder(),
+                field.getCreatedAt(),
+                field.getUpdatedAt()
+        );
+    }
+}

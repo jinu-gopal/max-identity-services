@@ -1,0 +1,78 @@
+package com.max.erp.identity.controller;
+
+import com.max.erp.identity.dto.BusinessObjectFieldResponse;
+import com.max.erp.identity.dto.CreateBusinessObjectFieldRequest;
+import com.max.erp.identity.dto.UpdateBusinessObjectFieldRequest;
+import com.max.erp.identity.service.BusinessObjectFieldService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping(
+        "/api/v1/configuration/business-objects/{businessObjectId}/fields"
+)
+public class BusinessObjectFieldController {
+
+    private final BusinessObjectFieldService fieldService;
+
+    public BusinessObjectFieldController(
+            BusinessObjectFieldService fieldService) {
+
+        this.fieldService = fieldService;
+    }
+
+    // ============================================================
+    // GET ALL FIELDS
+    // ============================================================
+
+    @GetMapping
+    public ResponseEntity<List<BusinessObjectFieldResponse>> getFields(
+            @PathVariable UUID businessObjectId) {
+
+        return ResponseEntity.ok(
+                fieldService.getFields(businessObjectId)
+        );
+    }
+
+    // ============================================================
+    // CREATE FIELD
+    // ============================================================
+
+    @PostMapping
+    public ResponseEntity<BusinessObjectFieldResponse> createField(
+            @PathVariable UUID businessObjectId,
+            @Valid @RequestBody CreateBusinessObjectFieldRequest request) {
+
+        BusinessObjectFieldResponse response =
+                fieldService.createField(
+                        businessObjectId,
+                        request
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================================
+    // UPDATE FIELD
+    // ============================================================
+
+    @PutMapping("/{fieldId}")
+    public ResponseEntity<BusinessObjectFieldResponse> updateField(
+            @PathVariable UUID businessObjectId,
+            @PathVariable UUID fieldId,
+            @Valid @RequestBody UpdateBusinessObjectFieldRequest request) {
+
+        BusinessObjectFieldResponse response =
+                fieldService.updateField(
+                        businessObjectId,
+                        fieldId,
+                        request
+                );
+
+        return ResponseEntity.ok(response);
+    }
+}
