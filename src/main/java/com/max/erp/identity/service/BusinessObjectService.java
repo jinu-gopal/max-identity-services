@@ -4,9 +4,13 @@ import com.max.erp.identity.dto.BusinessObjectResponse;
 import com.max.erp.identity.dto.CreateBusinessObjectRequest;
 import com.max.erp.identity.dto.UpdateBusinessObjectRequest;
 import com.max.erp.identity.entity.BusinessObject;
+import com.max.erp.identity.entity.BusinessObjectField;
+import com.max.erp.identity.repository.BusinessObjectFieldRepository;
 import com.max.erp.identity.repository.BusinessObjectRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,11 +20,14 @@ import java.util.UUID;
 public class BusinessObjectService {
 
     private final BusinessObjectRepository businessObjectRepository;
+    private final BusinessObjectFieldRepository fieldRepository;
 
     public BusinessObjectService(
-            BusinessObjectRepository businessObjectRepository) {
+            BusinessObjectRepository businessObjectRepository,
+            BusinessObjectFieldRepository fieldRepository) {
 
         this.businessObjectRepository = businessObjectRepository;
+        this.fieldRepository = fieldRepository;
     }
 
     /**
@@ -34,6 +41,19 @@ public class BusinessObjectService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /**
+     * Get a business object by ID.
+     */
+    @Transactional(readOnly = true)
+    public BusinessObjectResponse getById(UUID id) {
+        return businessObjectRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Business object not found"
+                ));
     }
 
     /**
@@ -94,6 +114,40 @@ public class BusinessObjectService {
 
         BusinessObject saved =
                 businessObjectRepository.save(businessObject);
+
+        return toResponse(saved);
+    }
+
+    /**
+     * Publish a DRAFT business object to ACTIVE.
+     * Validates that at least one field is configured.
+     */
+    public BusinessObjectResponse publish(UUID id) {
+        BusinessObject businessObject = businessObjectRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Business object not found"
+                ));
+
+        if (!"DRAFT".equalsIgnoreCase(businessObject.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Only DRAFT business objects can be published"
+            );
+        }
+
+        List<BusinessObjectField> fields = fieldRepository
+                .findAllByBusinessObjectIdOrderByDisplayOrderAsc(id);
+
+        if (fields.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cannot publish a business object without any configured fields"
+            );
+        }
+
+        businessObject.setStatus("PUBLISHED");
+        BusinessObject saved = businessObjectRepository.save(businessObject);
 
         return toResponse(saved);
     }

@@ -1,12 +1,14 @@
 package com.max.erp.identity.exception;
 
 import com.max.erp.identity.authorization.AuthorizationException;
+import com.max.erp.identity.validation.RecordValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -57,6 +59,27 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiErrorResponse>
+    handleIllegalState(
+            IllegalStateException exception,
+            HttpServletRequest request) {
+
+        ApiErrorResponse response =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.CONFLICT.value(),
+                        "CONFLICT",
+                        exception.getMessage(),
+                        request.getRequestURI(),
+                        Map.of()
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse>
     handleValidation(
@@ -87,6 +110,62 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .badRequest()
+                .body(response);
+    }
+
+    @ExceptionHandler(RecordValidationException.class)
+    public ResponseEntity<ApiErrorResponse>
+    handleRecordValidation(
+            RecordValidationException exception,
+            HttpServletRequest request) {
+
+        Map<String, String> errors =
+                new LinkedHashMap<>();
+
+        exception.getErrors()
+                .forEach(error ->
+                        errors.putIfAbsent(
+                                error.fieldKey(),
+                                error.message()
+                        )
+                );
+
+        ApiErrorResponse response =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        "VALIDATION_ERROR",
+                        exception.getMessage(),
+                        request.getRequestURI(),
+                        errors
+                );
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse>
+    handleResponseStatusException(
+            ResponseStatusException exception,
+            HttpServletRequest request) {
+
+        HttpStatus status =
+                HttpStatus.valueOf(exception.getStatusCode().value());
+
+        ApiErrorResponse response =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        status.value(),
+                        status.name(),
+                        exception.getReason(),
+                        request.getRequestURI(),
+                        Map.of()
+                );
+
+        return ResponseEntity
+                .status(status)
                 .body(response);
     }
 

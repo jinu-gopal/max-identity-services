@@ -1,8 +1,8 @@
 package com.max.erp.identity.controller;
 
 import com.max.erp.identity.dto.CreateOrganizationRequest;
+import com.max.erp.identity.dto.OrganizationResponse;
 import com.max.erp.identity.dto.UpdateOrganizationRequest;
-import com.max.erp.identity.entity.Organization;
 import com.max.erp.identity.service.OrganizationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,60 +25,59 @@ public class OrganizationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Organization>>
+    public ResponseEntity<List<OrganizationResponse>>
     getOrganizations(
             @PathVariable UUID tenantId) {
 
         return ResponseEntity.ok(
                 organizationService
-                        .getOrganizations(tenantId)
+                        .getOrganizationResponses(tenantId)
         );
     }
 
     @GetMapping("/{organizationId}")
-    public ResponseEntity<Organization>
+    public ResponseEntity<OrganizationResponse>
     getOrganization(
+            @PathVariable UUID tenantId,
             @PathVariable UUID organizationId) {
 
         return ResponseEntity.ok(
                 organizationService
-                        .getOrganization(organizationId)
+                        .getOrganizationResponse(tenantId, organizationId)
         );
     }
 
     @PostMapping
-    public ResponseEntity<Organization>
+    public ResponseEntity<OrganizationResponse>
     createOrganization(
             @PathVariable UUID tenantId,
             @Valid @RequestBody
                     CreateOrganizationRequest request) {
 
-        Organization organization =
-                organizationService.createOrganization(
+        OrganizationResponse response =
+                organizationService.createOrganizationResponse(
                         tenantId,
-                        request.organizationKey(),
-                        request.name(),
-                        request.organizationType(),
-                        request.parentOrganizationId()
+                        request
                 );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(organization);
+                .body(response);
     }
 
     @PutMapping("/{organizationId}")
-    public ResponseEntity<Organization>
+    public ResponseEntity<OrganizationResponse>
     updateOrganization(
+            @PathVariable UUID tenantId,
             @PathVariable UUID organizationId,
             @Valid @RequestBody
                     UpdateOrganizationRequest request) {
 
         return ResponseEntity.ok(
                 organizationService.updateOrganization(
+                        tenantId,
                         organizationId,
-                        request.name(),
-                        request.status()
+                        request
                 )
         );
     }

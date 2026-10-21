@@ -60,6 +60,10 @@ public class BusinessObject {
         return id;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public String getObjectKey() {
         return objectKey;
     }

@@ -7,7 +7,10 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Configuration
@@ -19,30 +22,64 @@ public class OAuthClientInitializer {
 
         return args -> {
 
-            if (registeredClientRepository.findByClientId("max-erp-web") != null) {
+            RegisteredClient existing =
+                    registeredClientRepository.findByClientId("max-erp-web");
+
+            if (existing != null) {
+                RegisteredClient updated =
+                        RegisteredClient.from(existing)
+                                .clientSettings(
+                                        ClientSettings.builder()
+                                                .requireAuthorizationConsent(false)
+                                                .build()
+                                )
+                                .tokenSettings(
+                                        TokenSettings.builder()
+                                                .accessTokenTimeToLive(Duration.ofDays(7))
+                                                .refreshTokenTimeToLive(Duration.ofDays(30))
+                                                .reuseRefreshTokens(true)
+                                                .build()
+                                )
+                                .build();
+
+                registeredClientRepository.save(updated);
                 return;
             }
 
             RegisteredClient client =
-                    RegisteredClient.withId(UUID.randomUUID().toString())
-                            .clientId("max-erp-web")
-                            .clientName("MAX ERP Web Application")
-                            .clientAuthenticationMethod(
-                                    ClientAuthenticationMethod.NONE
-                            )
-                            .authorizationGrantType(
-                                    AuthorizationGrantType.AUTHORIZATION_CODE
-                            )
-                            .authorizationGrantType(
-                                    AuthorizationGrantType.REFRESH_TOKEN
-                            )
-                            .redirectUri(
-                                    "http://127.0.0.1:3000/login/oauth2/code/max-erp"
-                            )
-                            .scope("openid")
-                            .scope("profile")
-                            .scope("email")
-                            .build();
+                    RegisteredClient.withId(
+                            UUID.randomUUID().toString()
+                    )
+                    .clientId("max-erp-web")
+                    .clientName("MAX ERP Web Application")
+                    .clientAuthenticationMethod(
+                            ClientAuthenticationMethod.NONE
+                    )
+                    .authorizationGrantType(
+                            AuthorizationGrantType.AUTHORIZATION_CODE
+                    )
+                    .authorizationGrantType(
+                            AuthorizationGrantType.REFRESH_TOKEN
+                    )
+                    .redirectUri(
+                            "http://127.0.0.1:3000/login/oauth2/code/max-erp"
+                    )
+                    .scope("openid")
+                    .scope("profile")
+                    .scope("email")
+                    .clientSettings(
+                            ClientSettings.builder()
+                                    .requireAuthorizationConsent(false)
+                                    .build()
+                    )
+                    .tokenSettings(
+                            TokenSettings.builder()
+                                    .accessTokenTimeToLive(Duration.ofDays(7))
+                                    .refreshTokenTimeToLive(Duration.ofDays(30))
+                                    .reuseRefreshTokens(true)
+                                    .build()
+                    )
+                    .build();
 
             registeredClientRepository.save(client);
         };

@@ -87,6 +87,31 @@ public class UserController {
     }
 
     /**
+     * Get user by ID.
+     *
+     * GET /api/v1/users/{userId}
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserResponseDto> getUserById(@PathVariable java.util.UUID userId) {
+        User user = userService.getUserById(userId);
+        return ResponseEntity.ok(toResponseDto(user));
+    }
+
+    /**
+     * Update user.
+     *
+     * PUT /api/v1/users/{userId}
+     */
+    @PutMapping("/{userId}")
+    public ResponseEntity<UserResponseDto> updateUser(
+            @PathVariable java.util.UUID userId,
+            @RequestBody com.max.erp.identity.dto.UpdateUserRequest request) {
+
+        User updated = userService.updateUser(userId, request);
+        return ResponseEntity.ok(toResponseDto(updated));
+    }
+
+    /**
      * Convert User entity to API response DTO.
      *
      * Password hash is intentionally never returned.

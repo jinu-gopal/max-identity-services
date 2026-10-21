@@ -1,5 +1,6 @@
 package com.max.erp.identity.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import java.util.UUID;
         )
     }
 )
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class RolePermission {
 
     @Id

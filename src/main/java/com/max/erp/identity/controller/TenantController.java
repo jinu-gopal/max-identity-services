@@ -1,7 +1,10 @@
 package com.max.erp.identity.controller;
 
-import com.max.erp.identity.entity.Tenant;
+import com.max.erp.identity.dto.CreateTenantRequest;
+import com.max.erp.identity.dto.TenantResponse;
+import com.max.erp.identity.dto.UpdateTenantRequest;
 import com.max.erp.identity.service.TenantService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +26,9 @@ public class TenantController {
      * Get all tenants.
      */
     @GetMapping
-    public ResponseEntity<List<Tenant>> getAllTenants() {
-
+    public ResponseEntity<List<TenantResponse>> getAllTenants() {
         return ResponseEntity.ok(
-                tenantService.getAllTenants()
+                tenantService.getAllTenantResponses()
         );
     }
 
@@ -34,48 +36,58 @@ public class TenantController {
      * Get tenant by ID.
      */
     @GetMapping("/{tenantId}")
-    public ResponseEntity<Tenant> getTenant(
+    public ResponseEntity<TenantResponse> getTenant(
             @PathVariable UUID tenantId) {
 
         return ResponseEntity.ok(
-                tenantService.getTenant(tenantId)
+                tenantService.getTenantResponse(tenantId)
         );
     }
 
     /**
-     * Create tenant.
+     * Create tenant. Supports both JSON request body and URL query parameters.
      */
     @PostMapping
-    public ResponseEntity<Tenant> createTenant(
-            @RequestParam String tenantKey,
-            @RequestParam String name) {
+    public ResponseEntity<TenantResponse> createTenant(
+            @Valid @RequestBody(required = false) CreateTenantRequest bodyRequest,
+            @RequestParam(required = false) String tenantKey,
+            @RequestParam(required = false) String name) {
 
-        Tenant tenant =
-                tenantService.createTenant(
-                        tenantKey,
-                        name
-                );
+        CreateTenantRequest request;
+        if (bodyRequest != null) {
+            request = bodyRequest;
+        } else if (tenantKey != null && name != null) {
+            request = new CreateTenantRequest(tenantKey, name);
+        } else {
+            throw new IllegalArgumentException("Tenant key and name are required");
+        }
+
+        TenantResponse response = tenantService.createTenantResponse(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(tenant);
+                .body(response);
     }
 
     /**
-     * Update tenant.
+     * Update tenant. Supports both JSON request body and URL query parameters.
      */
     @PutMapping("/{tenantId}")
-    public ResponseEntity<Tenant> updateTenant(
+    public ResponseEntity<TenantResponse> updateTenant(
             @PathVariable UUID tenantId,
+            @Valid @RequestBody(required = false) UpdateTenantRequest bodyRequest,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String status) {
 
+        UpdateTenantRequest request;
+        if (bodyRequest != null) {
+            request = bodyRequest;
+        } else {
+            request = new UpdateTenantRequest(name, status);
+        }
+
         return ResponseEntity.ok(
-                tenantService.updateTenant(
-                        tenantId,
-                        name,
-                        status
-                )
+                tenantService.updateTenantResponse(tenantId, request)
         );
     }
 }

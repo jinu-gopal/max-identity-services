@@ -38,6 +38,19 @@ public class BusinessObjectController {
     }
 
     /**
+     * Get a single business object by ID.
+     *
+     * GET /api/v1/configuration/business-objects/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<BusinessObjectResponse> getById(@PathVariable UUID id) {
+
+        return ResponseEntity.ok(
+                businessObjectService.getById(id)
+        );
+    }
+
+    /**
      * Create a new business object.
      *
      * POST /api/v1/configuration/business-objects
@@ -66,6 +79,20 @@ public class BusinessObjectController {
 
         BusinessObjectResponse response =
                 businessObjectService.update(id, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Publish a DRAFT business object to ACTIVE.
+     *
+     * POST /api/v1/configuration/business-objects/{id}/publish
+     */
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<BusinessObjectResponse> publish(@PathVariable UUID id) {
+
+        BusinessObjectResponse response =
+                businessObjectService.publish(id);
 
         return ResponseEntity.ok(response);
     }

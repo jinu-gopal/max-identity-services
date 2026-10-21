@@ -103,15 +103,17 @@ public class UserRoleService {
 
         /*
          * A role assignment is only meaningful when the
-         * user has access to the tenant.
+         * user has access to the tenant. If not granted yet,
+         * grant active tenant access automatically.
          */
         if (!userTenantAccessService.hasTenantAccess(
                 userId,
                 tenantId
         )) {
-
-            throw new IllegalArgumentException(
-                    "User does not have active access to tenant"
+            userTenantAccessService.grantAccess(
+                    userId,
+                    tenantId,
+                    null
             );
         }
 

@@ -113,6 +113,31 @@ public class UserService {
     }
 
     /**
+     * Update user via request DTO.
+     */
+    public User updateUser(UUID id, com.max.erp.identity.dto.UpdateUserRequest request) {
+        User existingUser = getUserById(id);
+
+        if (request.email() != null && !request.email().isBlank()) {
+            existingUser.setEmail(request.email().trim());
+        }
+
+        if (request.status() != null && !request.status().isBlank()) {
+            existingUser.setStatus(request.status().trim().toUpperCase());
+        }
+
+        if (request.emailVerified() != null) {
+            existingUser.setEmailVerified(request.emailVerified());
+        }
+
+        if (request.mfaEnabled() != null) {
+            existingUser.setMfaEnabled(request.mfaEnabled());
+        }
+
+        return userRepository.save(existingUser);
+    }
+
+    /**
      * Delete a user.
      */
     public void deleteUser(UUID id) {

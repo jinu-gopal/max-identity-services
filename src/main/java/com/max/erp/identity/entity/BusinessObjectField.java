@@ -99,6 +99,10 @@ public class BusinessObjectField {
         return id;
     }
 
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     public BusinessObject getBusinessObject() {
         return businessObject;
     }

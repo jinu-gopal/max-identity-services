@@ -1,6 +1,7 @@
 package com.max.erp.identity.controller;
 
 import com.max.erp.identity.dto.AssignPermissionRequest;
+import com.max.erp.identity.dto.RolePermissionResponse;
 import com.max.erp.identity.entity.RolePermission;
 import com.max.erp.identity.service.RolePermissionService;
 import jakarta.validation.Valid;
@@ -19,34 +20,38 @@ public class RolePermissionController {
     public RolePermissionController(
             RolePermissionService rolePermissionService) {
 
-        this.rolePermissionService =
-                rolePermissionService;
+        this.rolePermissionService = rolePermissionService;
     }
 
     @GetMapping
-    public ResponseEntity<List<RolePermission>>
+    public ResponseEntity<List<RolePermissionResponse>>
     getPermissions(
             @PathVariable UUID roleId) {
 
-        return ResponseEntity.ok(
-                rolePermissionService
-                        .getPermissions(roleId)
-        );
+        List<RolePermissionResponse> response = rolePermissionService
+                .getPermissions(roleId)
+                .stream()
+                .map(RolePermissionResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<RolePermission>
+    public ResponseEntity<RolePermissionResponse>
     assignPermission(
             @PathVariable UUID roleId,
             @Valid @RequestBody
             AssignPermissionRequest request) {
 
+        RolePermission rolePermission = rolePermissionService
+                .assignPermission(
+                        roleId,
+                        request.permissionId()
+                );
+
         return ResponseEntity.ok(
-                rolePermissionService
-                        .assignPermission(
-                                roleId,
-                                request.permissionId()
-                        )
+                RolePermissionResponse.from(rolePermission)
         );
     }
 

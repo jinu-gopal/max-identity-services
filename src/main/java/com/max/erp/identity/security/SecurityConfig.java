@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/favicon.ico"
+                                "/favicon.ico",
+                                "/api/v1/recruitment/public/**"
                         ).permitAll()
 
                         /*

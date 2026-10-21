@@ -3,6 +3,8 @@ package com.max.erp.identity.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.UUID;
+
 public record UpdateOrganizationRequest(
 
         @NotBlank(message = "Organization name is required")
@@ -10,6 +12,14 @@ public record UpdateOrganizationRequest(
         String name,
 
         @NotBlank(message = "Organization status is required")
-        String status
+        String status,
+
+        String organizationType,
+
+        UUID parentOrganizationId
 ) {
+
+    public UpdateOrganizationRequest(String name, String status) {
+        this(name, status, null, null);
+    }
 }
