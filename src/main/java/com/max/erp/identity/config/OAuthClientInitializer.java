@@ -28,6 +28,10 @@ public class OAuthClientInitializer {
             if (existing != null) {
                 RegisteredClient updated =
                         RegisteredClient.from(existing)
+                                .redirectUri("http://localhost:3000/api/auth/callback/max-erp")
+                                .redirectUri("http://127.0.0.1:3000/api/auth/callback/max-erp")
+                                .redirectUri("http://localhost:3000/login/oauth2/code/max-erp")
+                                .redirectUri("http://127.0.0.1:3000/login/oauth2/code/max-erp")
                                 .clientSettings(
                                         ClientSettings.builder()
                                                 .requireAuthorizationConsent(false)
@@ -61,9 +65,10 @@ public class OAuthClientInitializer {
                     .authorizationGrantType(
                             AuthorizationGrantType.REFRESH_TOKEN
                     )
-                    .redirectUri(
-                            "http://127.0.0.1:3000/login/oauth2/code/max-erp"
-                    )
+                    .redirectUri("http://localhost:3000/api/auth/callback/max-erp")
+                    .redirectUri("http://127.0.0.1:3000/api/auth/callback/max-erp")
+                    .redirectUri("http://localhost:3000/login/oauth2/code/max-erp")
+                    .redirectUri("http://127.0.0.1:3000/login/oauth2/code/max-erp")
                     .scope("openid")
                     .scope("profile")
                     .scope("email")
